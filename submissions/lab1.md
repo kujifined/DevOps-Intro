@@ -3,8 +3,9 @@
 ## Task 1
 
 ---
-git log --show-signature -1
+`git log --show-signature -1`
 
+```
 commit 9da775a392ec1a9834544402d9260ff7e45cb67e (HEAD -> feature/lab1, origin/feature/lab1)
 Good "git" signature for danil.2006@list.ru with ED25519 key SHA256:xBYpXoDFi9CwxWco0tgFXy+0HSD4NxXrb3qsNsdqQY0
 Author: Danil Khasanshin <danil.2006@list.ru>
@@ -14,18 +15,24 @@ Date:   Sat Jun 6 19:47:49 2026 +0300
 
     Signed-off-by: Danil Khasanshin <danil.2006@list.ru>
 
+```
+
 ---
 
-curl -s http://localhost:8080/health | python3 -m json.tool 
+`curl -s http://localhost:8080/health | python3 -m json.tool`
 
+```
 {
     "notes": 5,
     "status": "ok"
 }
+```
 
 ---
 
-curl -s http://localhost:8080/notes | python3 -m json.tool
+`curl -s http://localhost:8080/notes | python3 -m json.tool`
+
+```
 [
     {
         "id": 2,
@@ -58,26 +65,30 @@ curl -s http://localhost:8080/notes | python3 -m json.tool
         "created_at": "2026-01-15T10:00:00Z"
     }
 ]
+```
 
 ---
 
+```
 curl -s -X POST http://localhost:8080/notes \ 
   -H 'Content-Type: application/json' \
   -d '{"title":"hello","body":"first POST"}' | python3 -m json.tool
+```
 
+```
 {
     "id": 6,
     "title": "hello",
     "body": "first POST",
     "created_at": "2026-06-06T17:11:59.93711Z"
 }
-
+```
 
 ---
 
 ### GitHub Verified badge
 
-![Verified badge](docs/screenshots/verified_badge)
+![Verified badge](docs/screenshots/verified_badge.png)
 
 ---
 
