@@ -295,3 +295,73 @@ Check alert state:
 curl -s http://localhost:9090/api/v1/alerts \
   | jq '.data.alerts[] | {name: .labels.alertname, state: .state, severity: .labels.severity}'
 ```
+
+## Bonus Task - Synthetic Monitoring from the Outside
+
+### Public URL
+
+QuickNotes was exposed through ngrok:
+
+```text
+https://d322-178-17-58-6.ngrok-free.app/health
+```
+
+Public health check:
+
+```text
+HTTP/2 200
+{"notes":204,"status":"ok"}
+```
+
+### Checkly API check
+
+Checkly monitor:
+
+```text
+Name: QuickNotes external health
+URL: https://d322-178-17-58-6.ngrok-free.app/health
+Frequency: 1 minute
+Locations: Frankfurt (eu-central-1), Singapore (ap-southeast-1)
+Assertions: HTTP 200, response time < 2000 ms
+Alert channel: email
+```
+
+Evidence:
+
+![Checkly config](../screenshots/lab8-checkly-config.png)
+![External probes in ngrok inspector](../screenshots/lab8-checkly-live.png)
+
+### 30+ minute observation
+
+The check ran against the public ngrok URL for more than 30 minutes. ngrok's local inspector observed Checkly probes from `2026-06-28T21:31:27+03:00` through `2026-06-28T22:07:38+03:00`.
+
+Observed external probe summary:
+
+```json
+{
+  "count": 38,
+  "errors": 0,
+  "remotes": [
+    "122.248.238.187",
+    "13.214.117.85",
+    "84.16.252.217",
+    "84.16.252.218"
+  ],
+  "p50_ms": 3.4665,
+  "p95_ms": 7.572583
+}
+```
+
+The `User-Agent` was `Checkly/1.0 (https://www.checklyhq.com)` and every observed `/health` response was `200 OK`.
+
+### Internal vs external comparison
+
+QuickNotes does not expose a request-duration histogram, so the Prometheus latency numbers below use internal Prometheus scrape duration for `job="quicknotes"` as the closest available internal latency proxy. Checkly measures the public `/health` path through ngrok from external regions, so the values are not expected to match exactly.
+
+| | Prometheus inside Compose | Checkly/ngrok from external probes |
+|---|---:|---:|
+| Avg latency p50 | 1.56 ms scrape duration | 3.47 ms public `/health` duration |
+| Avg latency p95 | 5.24 ms scrape duration | 7.57 ms public `/health` duration |
+| Errors observed | 0 4xx/5xx responses in 30m | 0 non-200 responses in 38 probes |
+
+Prometheus can see application-internal counters, scrape health, and container-network reachability even when the service is not publicly exposed. It would catch a rising QuickNotes error counter, bad scrape target, or internal saturation signal that Checkly cannot infer from a simple `/health` call. Checkly catches public-reachability failures that Prometheus inside Compose cannot see, such as an expired ngrok tunnel, public DNS/routing problems, regional network latency, or an edge path that returns errors while the internal container still looks healthy. In this run, both views agreed that the service was healthy: Prometheus saw zero 4xx/5xx responses during the window, and Checkly/ngrok observed zero non-200 external probes.
