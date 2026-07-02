@@ -1,0 +1,9 @@
+[Unit]
+Description=Converge QuickNotes from Git with ansible-pull
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory={{ ansible_pull_workdir }}
+ExecStart=/usr/bin/ansible-pull -U {{ ansible_pull_repo_url }} -C {{ ansible_pull_branch }} -d {{ ansible_pull_workdir }} -i {{ ansible_pull_inventory_path }} --limit {{ ansible_pull_limit_host }} ansible/playbook.yaml -e ansible_pull_enabled=true
