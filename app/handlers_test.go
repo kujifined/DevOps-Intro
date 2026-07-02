@@ -40,11 +40,12 @@ func TestSecurityHeaders_AppliedToRoutes(t *testing.T) {
 	rec := do(t, srv, http.MethodGet, "/health", nil)
 
 	tests := map[string]string{
-		"Content-Security-Policy": contentSecurityPolicy,
-		"X-Content-Type-Options":  "nosniff",
-		"X-Frame-Options":         "DENY",
-		"Referrer-Policy":         "no-referrer",
-		"Cache-Control":           "no-store",
+		"Content-Security-Policy":      contentSecurityPolicy,
+		"X-Content-Type-Options":       "nosniff",
+		"X-Frame-Options":              "DENY",
+		"Referrer-Policy":              "no-referrer",
+		"Cache-Control":                "no-store",
+		"Cross-Origin-Resource-Policy": "same-origin",
 	}
 
 	for header, want := range tests {
