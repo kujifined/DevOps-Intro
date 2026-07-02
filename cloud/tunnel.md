@@ -7,19 +7,21 @@
 ## Local run
 
 ```bash
-docker run --rm -p 8080:8080 \
+docker run --rm -p 18080:8080 \
   ghcr.io/kujifined/devops-intro/quicknotes:v0.1.0
 ```
 
 ## Quick tunnel
 
 ```bash
-cloudflared tunnel --url http://localhost:8080
+docker run --rm --name quicknotes-lab10-cloudflared \
+  cloudflare/cloudflared:latest tunnel \
+  --url http://host.docker.internal:18080
 ```
 
 ## Public URL
 
-`PENDING_REAL_EVIDENCE: paste the ephemeral trycloudflare.com URL from cloudflared`
+`https://those-civilian-distinct-reveals.trycloudflare.com`
 
 Quick tunnels are ephemeral. The URL changes after restarting `cloudflared`.
 
@@ -32,6 +34,14 @@ curl -v "$CLOUDFLARE_URL/health"
 ```
 
 Expected result: `200 OK` and QuickNotes health JSON.
+
+Observed result:
+
+```text
+GET /health HTTP/2
+< HTTP/2 200
+{"notes":4,"status":"ok"}
+```
 
 ## Latency
 
@@ -47,5 +57,5 @@ awk 'NR==25{print "p50 approx:", $1} NR==48{print "p95 approx:", $1}' \
   cloud/cloudflare-times.txt
 ```
 
-- p50: `PENDING_REAL_EVIDENCE s`
-- p95: `PENDING_REAL_EVIDENCE s`
+- p50: `0.386789 s`
+- p95: `0.451584 s`

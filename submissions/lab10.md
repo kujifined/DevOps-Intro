@@ -97,7 +97,7 @@ git push origin v0.1.0
 
 GitHub Actions run:
 
-`PENDING_REAL_EVIDENCE: paste the green release run URL after pushing tag v0.1.0`
+`https://github.com/kujifined/DevOps-Intro/actions/runs/28627648667`
 
 ### Image
 
@@ -109,22 +109,35 @@ ghcr.io/kujifined/devops-intro/quicknotes:latest
 ### Clean pull evidence
 
 ```bash
+docker logout ghcr.io
 docker rmi ghcr.io/kujifined/devops-intro/quicknotes:v0.1.0 || true
 docker pull ghcr.io/kujifined/devops-intro/quicknotes:v0.1.0
-docker run --rm -p 8080:8080 ghcr.io/kujifined/devops-intro/quicknotes:v0.1.0
-curl -v http://localhost:8080/health
+docker run --rm -p 18080:8080 ghcr.io/kujifined/devops-intro/quicknotes:v0.1.0
+curl -v http://localhost:18080/health
+curl -v http://localhost:18080/notes
 ```
 
 Result:
 
 ```text
-PENDING_REAL_EVIDENCE: paste successful unauthenticated pull and /health output.
+Removing login credentials for ghcr.io
+v0.1.0: Pulling from kujifined/devops-intro/quicknotes
+Digest: sha256:1f291fbc5840ebe18503d6adde45ef336a5bbc42d1955770b8b19e308b5b62e3
+Status: Downloaded newer image for ghcr.io/kujifined/devops-intro/quicknotes:v0.1.0
+
+GET /health HTTP/1.1
+< HTTP/1.1 200 OK
+{"notes":4,"status":"ok"}
+
+GET /notes HTTP/1.1
+< HTTP/1.1 200 OK
+[{"id":1,"title":"Welcome to QuickNotes", ... }]
 ```
 
 Package visibility note:
 
 ```text
-PENDING_REAL_EVIDENCE: after the first GHCR push, set the package visibility to public in GitHub Packages if it was created as private. Verify the pull after docker logout ghcr.io.
+The GHCR package is publicly pullable. Unauthenticated pull was verified after docker logout ghcr.io.
 ```
 
 ### Design question a - OIDC vs GITHUB_TOKEN
@@ -279,9 +292,13 @@ docker run --rm -p 8080:8080 \
 cloudflared tunnel --url http://localhost:8080
 ```
 
+For the local measurement below, the release image was bound to host port
+`18080` because another local compose stack was already using host port `8080`.
+The container still listened on port `8080`.
+
 ### Public URL
 
-`PENDING_REAL_EVIDENCE: paste the ephemeral trycloudflare.com URL from cloudflared`
+`https://those-civilian-distinct-reveals.trycloudflare.com`
 
 ### External verification
 
@@ -292,7 +309,8 @@ curl -v "$CLOUDFLARE_URL/health"
 Result:
 
 ```text
-PENDING_REAL_EVIDENCE: verified from phone on cellular or another network; /health returned 200 OK.
+GET /health returned HTTP/2 200 through the public trycloudflare.com URL:
+{"notes":4,"status":"ok"}
 ```
 
 ### Latency
@@ -300,16 +318,16 @@ PENDING_REAL_EVIDENCE: verified from phone on cellular or another network; /heal
 50 warm runs against `/health`.
 
 ```text
-p50: PENDING_REAL_EVIDENCE s
-p95: PENDING_REAL_EVIDENCE s
+p50: 0.386789 s
+p95: 0.451584 s
 ```
 
 ### Comparison table
 
 | Metric | HF Spaces (hosted) | Cloudflare Tunnel (local-via-edge) |
 |--------|-------------------:|-----------------------------------:|
-| Warm p50 | PENDING_REAL_EVIDENCE s | PENDING_REAL_EVIDENCE s |
-| Warm p95 | PENDING_REAL_EVIDENCE s | PENDING_REAL_EVIDENCE s |
+| Warm p50 | PENDING_REAL_EVIDENCE s | 0.386789 s |
+| Warm p95 | PENDING_REAL_EVIDENCE s | 0.451584 s |
 | Cold start | PENDING_REAL_EVIDENCE s / PENDING_REAL_EVIDENCE s / PENDING_REAL_EVIDENCE s | N/A, continuously local |
 | Public URL stability | stable while Space exists | ephemeral on restart |
 | Cost | free | free |
