@@ -1,0 +1,162 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - ".github/workflows/ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOFLAGS: -buildvcs=false
+
+jobs:
+  vet:
+    name: vet (go ${{ matrix.go-version }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version:
+          - "1.23"
+          - "1.24"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+          cache-dependency-path: app/go.mod
+
+      - name: Run go vet
+        working-directory: app
+        run: go vet ./...
+
+  test:
+    name: test (go ${{ matrix.go-version }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version:
+          - "1.23"
+          - "1.24"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+          cache-dependency-path: app/go.mod
+
+      - name: Run tests with race detector
+        working-directory: app
+        run: go test -race -count=1 ./...
+
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: "1.24"
+          cache: true
+          cache-dependency-path: app/go.mod
+
+      - name: Install golangci-lint
+        working-directory: app
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0
+
+      - name: Run golangci-lint
+        working-directory: app
+        run: golangci-lint run
+
+  govulncheck:
+    name: govulncheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: "1.24"
+          cache: true
+          cache-dependency-path: app/go.mod
+
+      - name: Install govulncheck
+        working-directory: app
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+
+      - name: Run govulncheck
+        working-directory: app
+        run: govulncheck ./...
+
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs:
+      - vet
+      - test
+      - lint
+      - govulncheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Check all required jobs passed
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            echo "At least one required job failed"
+            exit 1
+          fi
+
+          if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "At least one required job was cancelled"
+            exit 1
+          fi
+
+          echo "All required jobs passed"
