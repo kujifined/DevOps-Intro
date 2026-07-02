@@ -31,8 +31,28 @@ func do(t *testing.T, srv *Server, method, target string, body any) *httptest.Re
 	}
 	req := httptest.NewRequest(method, target, &buf)
 	rec := httptest.NewRecorder()
-	srv.Routes().ServeHTTP(rec, req)
+	srv.Handler().ServeHTTP(rec, req)
 	return rec
+}
+
+func TestSecurityHeaders_AppliedToRoutes(t *testing.T) {
+	srv := newTestServer(t)
+	rec := do(t, srv, http.MethodGet, "/health", nil)
+
+	tests := map[string]string{
+		"Content-Security-Policy":      contentSecurityPolicy,
+		"X-Content-Type-Options":       "nosniff",
+		"X-Frame-Options":              "DENY",
+		"Referrer-Policy":              "no-referrer",
+		"Cache-Control":                "no-store",
+		"Cross-Origin-Resource-Policy": "same-origin",
+	}
+
+	for header, want := range tests {
+		if got := rec.Header().Get(header); got != want {
+			t.Fatalf("%s = %q, want %q", header, got, want)
+		}
+	}
 }
 
 func TestHealth_ReportsCount(t *testing.T) {
@@ -130,4 +150,3 @@ func TestMetrics_ExposesPrometheusFormat(t *testing.T) {
 		}
 	}
 }
-
