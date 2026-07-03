@@ -1,0 +1,97 @@
+name: nix-repro
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-a:
+    name: build-a
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      digest: ${{ steps.digest.outputs.digest }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@a7ad9c4f0c65208097f4d34f3cfa1913b80cce5c
+
+      - name: Build OCI image
+        run: nix build .#docker
+
+      - name: Compute image digest
+        id: digest
+        shell: bash
+        run: |
+          digest="$(sha256sum result | awk '{print $1}')"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "Digest A: $digest"
+
+  build-b:
+    name: build-b
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      digest: ${{ steps.digest.outputs.digest }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@a7ad9c4f0c65208097f4d34f3cfa1913b80cce5c
+
+      - name: Build OCI image
+        run: nix build .#docker
+
+      - name: Compute image digest
+        id: digest
+        shell: bash
+        run: |
+          digest="$(sha256sum result | awk '{print $1}')"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "Digest B: $digest"
+
+  compare:
+    name: compare-digests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    needs:
+      - build-a
+      - build-b
+
+    steps:
+      - name: Compare independent image digests
+        shell: bash
+        run: |
+          digest_a="${{ needs.build-a.outputs.digest }}"
+          digest_b="${{ needs.build-b.outputs.digest }}"
+
+          echo "Digest A: $digest_a"
+          echo "Digest B: $digest_b"
+
+          if [[ -z "$digest_a" || -z "$digest_b" ]]; then
+            echo "One or both digests are empty"
+            exit 1
+          fi
+
+          if [[ "$digest_a" != "$digest_b" ]]; then
+            echo "Digest mismatch"
+            exit 1
+          fi
+
+          echo "Digests match"
