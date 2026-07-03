@@ -162,30 +162,41 @@ This release workflow only needs to read repository contents and write packages.
 
 ### Space URL
 
-`PENDING_REAL_EVIDENCE: paste the public Hugging Face Space URL, for example https://kujifined-quicknotes-lab10.hf.space`
+`https://kujifined-quicknotes-lab10.hf.space`
 
 ### Health check
 
 ```bash
-curl -v "$HF_SPACE_URL/health"
+curl -v https://kujifined-quicknotes-lab10.hf.space/health
 ```
 
 Result:
 
 ```text
-PENDING_REAL_EVIDENCE: paste HTTP 200 response and QuickNotes health JSON.
+HTTP/2 200
+content-type: application/json
+x-proxied-path: /health
+
+{"notes":4,"status":"ok"}
 ```
 
 ### Notes endpoint
 
 ```bash
-curl -v "$HF_SPACE_URL/notes"
+curl -v https://kujifined-quicknotes-lab10.hf.space/notes
 ```
 
 Result:
 
 ```text
-PENDING_REAL_EVIDENCE: paste HTTP 200 response and QuickNotes notes JSON.
+HTTP/2 200
+content-type: application/json
+x-proxied-path: /notes
+
+[{"id":4,"title":"Endpoint cheat-sheet", ... },
+ {"id":1,"title":"Welcome to QuickNotes", ... },
+ {"id":2,"title":"Read app/main.go first", ... },
+ {"id":3,"title":"DevOps mantra", ... }]
 ```
 
 ### Space Dockerfile
@@ -238,23 +249,30 @@ done
 Measurements:
 
 ```text
-PENDING_REAL_EVIDENCE
-PENDING_REAL_EVIDENCE
-PENDING_REAL_EVIDENCE
-PENDING_REAL_EVIDENCE
-PENDING_REAL_EVIDENCE
+0.570318
+0.624591
+0.797649
+0.523115
+0.594106
 ```
 
 Sorted:
 
 ```text
-PENDING_REAL_EVIDENCE
+0.523115, 0.570318, 0.594106, 0.624591, 0.797649
 ```
 
 Warm p50:
 
 ```text
-PENDING_REAL_EVIDENCE s
+0.594106 s
+```
+
+Additional 50-run warm sample for the comparison table:
+
+```text
+p50 approx: 0.510552 s
+p95 approx: 0.568446 s
 ```
 
 ### Cold latency
@@ -262,9 +280,9 @@ PENDING_REAL_EVIDENCE s
 Each cold measurement was taken after 35+ minutes of inactivity.
 
 ```text
-Cold #1: PENDING_REAL_EVIDENCE s
-Cold #2: PENDING_REAL_EVIDENCE s
-Cold #3: PENDING_REAL_EVIDENCE s
+Cold #1: 0.841248 s
+Cold #2: 0.728869 s
+Cold #3: 0.785760 s
 ```
 
 ### Design question d - HF Spaces sleep vs Cloud Run scale to zero
@@ -326,9 +344,9 @@ p95: 0.451584 s
 
 | Metric | HF Spaces (hosted) | Cloudflare Tunnel (local-via-edge) |
 |--------|-------------------:|-----------------------------------:|
-| Warm p50 | PENDING_REAL_EVIDENCE s | 0.386789 s |
-| Warm p95 | PENDING_REAL_EVIDENCE s | 0.451584 s |
-| Cold start | PENDING_REAL_EVIDENCE s / PENDING_REAL_EVIDENCE s / PENDING_REAL_EVIDENCE s | N/A, continuously local |
+| Warm p50 | 0.510552 s | 0.386789 s |
+| Warm p95 | 0.568446 s | 0.451584 s |
+| Cold start | 0.841248 s / 0.728869 s / 0.785760 s | N/A, continuously local |
 | Public URL stability | stable while Space exists | ephemeral on restart |
 | Cost | free | free |
 
