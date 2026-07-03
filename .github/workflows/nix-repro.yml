@@ -35,7 +35,7 @@ jobs:
         id: digest
         shell: bash
         run: |
-          digest="$(sha256sum result | awk '{print $1}')-red-proof"
+          digest="$(sha256sum result | awk '{print $1}')"
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
           echo "Digest A: $digest"
 

@@ -289,7 +289,15 @@ Pinned actions:
 
 ### Green run
 
-URL: not created from this local working tree because this submission was prepared without committing or pushing. The workflow is present and pinned; after the branch is pushed, the green run should show the same Nix tarball digest from `build-a` and `build-b`.
+URL: https://github.com/kujifined/DevOps-Intro/actions/runs/28652000390
+
+Job evidence:
+
+```text
+build-a success: https://github.com/kujifined/DevOps-Intro/actions/runs/28652000390/job/84972027107
+build-b success: https://github.com/kujifined/DevOps-Intro/actions/runs/28652000390/job/84972027076
+compare-digests success: https://github.com/kujifined/DevOps-Intro/actions/runs/28652000390/job/84972175264
+```
 
 Log excerpt:
 
@@ -301,20 +309,23 @@ Digests match
 
 ### Red run
 
-To demonstrate the gate catches divergence, temporarily perturb one job before the digest step, push once, capture the red run URL, then remove the perturbation.
+To demonstrate the gate catches divergence, I temporarily perturbed only `build-a`'s reported digest, pushed once, captured the red run URL, then restored the clean workflow. Both build jobs succeeded in the red run; only `compare-digests` failed.
 
-Temporary step for `build-a`:
+Temporary `build-a` digest line used for the red proof:
 
-```yaml
-      - name: Deliberately perturb artifact for red proof
-        run: |
-          cp result result-broken
-          printf "x" >> result-broken
-          rm result
-          mv result-broken result
+```bash
+digest="$(sha256sum result | awk '{print $1}')-red-proof"
 ```
 
-URL: not created from this local working tree because no temporary failing commit was pushed. The perturbation step below is the exact red-run procedure: it mutates only `build-a`'s artifact before `sha256sum`, so `compare-digests` fails with `Digest mismatch`.
+URL: https://github.com/kujifined/DevOps-Intro/actions/runs/28652224495
+
+Job evidence:
+
+```text
+build-a success: https://github.com/kujifined/DevOps-Intro/actions/runs/28652224495/job/84972762819
+build-b success: https://github.com/kujifined/DevOps-Intro/actions/runs/28652224495/job/84972762976
+compare-digests failure: https://github.com/kujifined/DevOps-Intro/actions/runs/28652224495/job/84972910233
+```
 
 Log excerpt:
 
